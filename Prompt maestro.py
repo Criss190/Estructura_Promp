@@ -1,8 +1,9 @@
 import os
+
 from google import genai
 from dotenv import load_dotenv
 
-# Cargar la API key desde el archivo .env
+# Cargar API Key
 load_dotenv()
 clave_api = os.getenv("GEMINI_API_KEY")
 
@@ -12,52 +13,45 @@ if not clave_api:
 client = genai.Client(api_key=clave_api)
 MODELO = "gemini-3.6-flash"
 
-# Función para pedir los datos del cliente al usuario
+# Entrada del usuario
+situacion = input("Escribe la situación: ").strip()
 
-def pedir_datos_cliente():
-    """Recoge la información necesaria para redactar el correo."""
-    nombre = input("Nombre del cliente: ").strip()
-    empresa = input("Empresa del cliente: ").strip()
-    factura = input("Número de factura: ").strip()
-    monto = input("Monto adeudado: ").strip()
-    fecha = input("Fecha de vencimiento: ").strip()
-    motivo = input("Motivo breve del correo: ").strip()
+# Prompt Maestro
+PROMPT = f'''Eres un Gerente de Finanzas amable pero firme.
 
-    return nombre, empresa, factura, monto, fecha, motivo
+Tu tarea es redactar un correo profesional para un cliente a partir
+de la situación proporcionada por el usuario.
 
-
-nombre, empresa, factura, monto, fecha, motivo = pedir_datos_cliente()
-
-# Prompt Maestro: usa los pilares Persona, Tarea, Contexto y Formato.
-# El delimitador ### separa los datos del cliente del resto de la instrucción.
-prompt_parte1 = f"""
-Persona: Eres un Gerente de Finanzas amable pero firme.
-
-Tarea: Escribe un correo dirigido a un cliente que tiene una factura pendiente
-de pago, solicitando el pago de forma clara y profesional.
-
-Contexto: El cliente mantiene una relación comercial activa con la empresa y
-se busca conservar una buena relación mientras se resuelve el pago pendiente.
-
-###
-Datos del cliente:
-Nombre: {nombre}
-Empresa: {empresa}
-Factura pendiente: {factura} por {monto}
-Fecha de vencimiento: {fecha}
-Motivo del correo: {motivo}
+### DATOS / SITUACIÓN DEL CLIENTE ###
+{situacion}
 ###
 
-Formato: El correo debe finalizar con un resumen en formato de tabla que
-muestre el número de factura, el monto adeudado y la fecha de vencimiento.
-"""
+El correo debe informar sobre el pago pendiente y solicitar su
+regularización de manera cordial, clara y profesional.
+
+Formato:
+1. Asunto
+2. Saludo
+3. Cuerpo del correo
+4. Despedida
+5. Al final, incluye una tabla con el resumen de los montos adeudados.
+
+Si la situación no contiene datos específicos como nombre, factura
+o monto, no los inventes. Puedes utilizar expresiones generales
+como "cliente" o "monto pendiente".
+
+No agregues explicaciones sobre el prompt. Entrega directamente
+el correo y la tabla.
+'''
 
 try:
     response = client.models.generate_content(
         model=MODELO,
-        contents=prompt_parte1
+        contents=PROMPT
     )
-    print("✅ Respuesta del modelo:")
+
+    print("\n========== RESULTADO ==========\n")
     print(response.text)
+
 except Exception as e:
-    print(f"❌ Ocurrió un error en la conexión: {e}")
+    print(f"❌ Ocurrió un error: {e}")
